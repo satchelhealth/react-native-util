@@ -636,19 +636,26 @@ exports.log = function() {
   console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
 };
 
-exports.inherits = function(ctor, superCtor) {
-  if (ctor === undefined || ctor === null)
-    throw new Error('The constructor to "inherits" must not be ' +
-                        'null or undefined');
-
-  if (superCtor === undefined || superCtor === null)
-    throw new Error('The super constructor to "inherits" must not ' +
-                        'be null or undefined');
-
-  if (superCtor.prototype === undefined)
-    throw new Error('The super constructor to "inherits" must ' +
-                        'have a prototype');
-
-  ctor.super_ = superCtor;
-  Object.setPrototypeOf(ctor.prototype, superCtor.prototype);
-};
+if (typeof Object.create === 'function') {
+  // implementation from standard node.js 'util' module
+  exports.inherits = function(ctor, superCtor) {
+    ctor.super_ = superCtor
+    ctor.prototype = Object.create(superCtor.prototype, {
+      constructor: {
+        value: ctor,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+  };
+} else {
+  // old school shim for old browsers
+  exports.inherits = function(ctor, superCtor) {
+    ctor.super_ = superCtor
+    var TempCtor = function () {}
+    TempCtor.prototype = superCtor.prototype
+    ctor.prototype = new TempCtor()
+    ctor.prototype.constructor = ctor
+  }
+}
